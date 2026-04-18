@@ -1,5 +1,32 @@
 # Vectorless RAG Platform Architecture
 
+## System Visual Architecture
+```mermaid
+graph TD
+    classDef adk fill:#4285F4,stroke:#fff,color:#fff,stroke-width:2px;
+    classDef postgres fill:#336791,stroke:#fff,color:#fff,stroke-width:2px;
+    classDef worker fill:#34A853,stroke:#fff,color:#fff,stroke-width:2px;
+    classDef external fill:#FABB05,stroke:#fff,color:#333,stroke-width:2px;
+    
+    User[User / Client]:::external -->|Natural Language Query| CA[ADK Coordinator Agent]:::adk
+    
+    subgraph "Google ADK Ecosystem"
+        CA -->|Delegates Context| RS[ADK Retrieval Specialist]:::adk
+        RS -->|Invokes Native Skills| SK[Vectorless Skills Service]:::adk
+    end
+    
+    subgraph "Ingestion Pipeline (Async)"
+        DOC[Raw Docs: PDF/DOCX]:::external -->|Upload POST| WA[FastAPI Ingestion Worker]:::worker
+        WA -->|Structural Parsing| C[Deterministic Markdown Chunker]:::worker
+    end
+    
+    subgraph "Vectorless FTS Datastore"
+        C -->|Persists UUID Chunks| DB[(PostgreSQL + pg_trgm)]:::postgres
+        SK -->|Executes Exact tsquery| DB
+        DB -->|Returns Strict Formatted Diffs| SK
+    end
+```
+
 ## 1. EXECUTIVE GOAL
 The Vectorless RAG platform solves the opacity, unpredictability, and non-determinism of embedding-based Retrieval-Augmented Generation systems. Traditional vector databases struggle with exact phrase matching (e.g., specific error codes, UUIDs, or policy numbers), lack debuggable explanation capabilities, and often fail in strict compliance boundary scenarios.
 
